@@ -539,56 +539,96 @@ Disassembly of section .text:
   401148:	83 fb 05             	cmp    $0x5,%ebx
   40114b:	7e e8                	jle    401135 <phase_6+0x41>
   40114d:	49 83 c5 04          	add    $0x4,%r13
-  401151:	eb c1                	jmp    401114 <phase_6+0x20>
-  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi
-  401158:	4c 89 f0             	mov    %r14,%rax
-  40115b:	b9 07 00 00 00       	mov    $0x7,%ecx
-  401160:	89 ca                	mov    %ecx,%edx
-  401162:	2b 10                	sub    (%rax),%edx
-  401164:	89 10                	mov    %edx,(%rax)
-  401166:	48 83 c0 04          	add    $0x4,%rax
+  401151:	eb c1                	jmp    401114 <phase_6+0x20>    
+  // 以上，检测 6 个值为不重复的 [1,6]的值 (两层for)
+  // 取六个值分别为 num[i]
+  ----------------------------
+  401153:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi    // rsi = stack_top+3*8 (指向栈顶第四行，前三个存了6个int)
+  401158:	4c 89 f0             	mov    %r14,%rax    // rax = stack_top
+  40115b:	b9 07 00 00 00       	mov    $0x7,%ecx    // rcx = 7
+  401160:	89 ca                	mov    %ecx,%edx    // rdx = rcx    (1)
+  401162:	2b 10                	sub    (%rax),%edx  // rdx -= num[0]
+  401164:	89 10                	mov    %edx,(%rax)  // num[0] = rdx
+  401166:	48 83 c0 04          	add    $0x4,%rax  // rax += 4 (地址+4)
   40116a:	48 39 f0             	cmp    %rsi,%rax
-  40116d:	75 f1                	jne    401160 <phase_6+0x6c>
-  40116f:	be 00 00 00 00       	mov    $0x0,%esi
-  401174:	eb 21                	jmp    401197 <phase_6+0xa3>
-  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx
-  40117a:	83 c0 01             	add    $0x1,%eax
-  40117d:	39 c8                	cmp    %ecx,%eax
-  40117f:	75 f5                	jne    401176 <phase_6+0x82>
-  401181:	eb 05                	jmp    401188 <phase_6+0x94>
-  401183:	ba d0 32 60 00       	mov    $0x6032d0,%edx
-  401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2)
-  40118d:	48 83 c6 04          	add    $0x4,%rsi
-  401191:	48 83 fe 18          	cmp    $0x18,%rsi
-  401195:	74 14                	je     4011ab <phase_6+0xb7>
-  401197:	8b 0c 34             	mov    (%rsp,%rsi,1),%ecx
-  40119a:	83 f9 01             	cmp    $0x1,%ecx
-  40119d:	7e e4                	jle    401183 <phase_6+0x8f>
-  40119f:	b8 01 00 00 00       	mov    $0x1,%eax
-  4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx
-  4011a9:	eb cb                	jmp    401176 <phase_6+0x82>
-  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx
-  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax
-  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi
-  4011ba:	48 89 d9             	mov    %rbx,%rcx
-  4011bd:	48 8b 10             	mov    (%rax),%rdx
-  4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx)
-  4011c4:	48 83 c0 08          	add    $0x8,%rax
-  4011c8:	48 39 f0             	cmp    %rsi,%rax
-  4011cb:	74 05                	je     4011d2 <phase_6+0xde>
-  4011cd:	48 89 d1             	mov    %rdx,%rcx
-  4011d0:	eb eb                	jmp    4011bd <phase_6+0xc9>
-  4011d2:	48 c7 42 08 00 00 00 	movq   $0x0,0x8(%rdx)
+  40116d:	75 f1                	jne    401160 <phase_6+0x6c>  // rax != rsi --> (1)
+  // 以上，num[i] = 7-num[i]
+  -----------------------------
+  40116f:	be 00 00 00 00       	mov    $0x0,%esi                // rsi = 0
+  401174:	eb 21                	jmp    401197 <phase_6+0xa3>    // goto (5)
+
+  401176:	48 8b 52 08          	mov    0x8(%rdx),%rdx           // (2) rdx = *(rdx+8) = 0x6032e0
+  40117a:	83 c0 01             	add    $0x1,%eax                // rax += 1
+  40117d:	39 c8                	cmp    %ecx,%eax                //
+  40117f:	75 f5                	jne    401176 <phase_6+0x82>    // if(rax!=rcx) goto (2)
+  401181:	eb 05                	jmp    401188 <phase_6+0x94>    // goto (4) 
+  401183:	ba d0 32 60 00       	mov    $0x6032d0,%edx           // (3) rdx = 0x6032d0
+  // (2) -> 这里会让 rax = rcx = num[rsi] = *(rdx)[4:7]
+
+  401188:	48 89 54 74 20       	mov    %rdx,0x20(%rsp,%rsi,2)   // (4) (rsp+0x20+2*rsi) = rdx
+  40118d:	48 83 c6 04          	add    $0x4,%rsi                // rsi += 4 (因此 2*rsi += 8)
+  401191:	48 83 fe 18          	cmp    $0x18,%rsi               //
+  401195:	74 14                	je     4011ab <phase_6+0xb7>    // if (rsi == 24 == 3*8) goto (6)
+  401197:	8b 0c 34             	mov    (%rsp,%rsi,1),%ecx       // (5) rcx = num[rsi] 
+  40119a:	83 f9 01             	cmp    $0x1,%ecx                //
+  40119d:	7e e4                	jle    401183 <phase_6+0x8f>    // if(rcx <= 1) goto (3)
+  40119f:	b8 01 00 00 00       	mov    $0x1,%eax                // rax = 1
+  4011a4:	ba d0 32 60 00       	mov    $0x6032d0,%edx           // rdx = 0x6032d0
+  4011a9:	eb cb                	jmp    401176 <phase_6+0x82>    // goto (2)
+  // 这里之后的内存结构 (input = 1 2 3 4 5 6)：
+  // 0x6032d0	4c 01 00 00 01 00 00 00
+  // 0x6032d8	e0 32 60 00 00 00 00 00
+  // 0x6032e0	a8 00 00 00 02 00 00 00	
+  // 0x6032e8	f0 32 60 00 00 00 00 00
+  // 0x6032f0	9c 03 00 00 03 00 00 00	
+  // 0x6032f8	00 33 60 00 00 00 00 00
+  // 0x603300	b3 02 00 00 04 00 00 00	
+  // 0x603308	10 33 60 00 00 00 00 00
+  // 0x603310	dd 01 00 00 05 00 00 00	
+  // 0x603318	20 33 60 00 00 00 00 00
+  // 0x603320	bb 01 00 00 06 00 00 00
+  // 
+  // 栈顶
+  // 0x7fffffffdab0	06 00 00 00 05 00 00 00	
+  // 0x7fffffffdab8	04 00 00 00 03 00 00 00	
+  // 0x7fffffffdac0	02 00 00 00 01 00 00 00	
+  // 0x7fffffffdac8	00 00 00 00 00 00 00 00	
+  // 0x7fffffffdad0	20 33 60 00 00 00 00 00	
+  // 0x7fffffffdad8	10 33 60 00 00 00 00 00	
+  // 0x7fffffffdae0	00 33 60 00 00 00 00 00	
+  // 0x7fffffffdae8	f0 32 60 00 00 00 00 00	
+  // 0x7fffffffdaf0	e0 32 60 00 00 00 00 00	
+  // 0x7fffffffdaf8	d0 32 60 00 00 00 00 00
+  // 后面6个地址的数据的high_4bytes指向前面的对应数
+  // 取 addr[i] 为后面6*8地址内存中的第i个数据, 则有 num[i] = *(addr[i])[4:8)
+  -----------------------------
+  4011ab:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx          // (6)rbx = addr[0]
+  4011b0:	48 8d 44 24 28       	lea    0x28(%rsp),%rax          // rax = &(addr[1])
+  4011b5:	48 8d 74 24 50       	lea    0x50(%rsp),%rsi          // rsi = &(addr[6]) overflow?
+  4011ba:	48 89 d9             	mov    %rbx,%rcx                // rcx = addr[0]
+
+  4011bd:	48 8b 10             	mov    (%rax),%rdx              // (7)rdx = (rax) = addr[i+1]
+  4011c0:	48 89 51 08          	mov    %rdx,0x8(%rcx)           // (rcx+8) = rdx = addr[i+1]
+  4011c4:	48 83 c0 08          	add    $0x8,%rax                // rax +=8 => i++
+  4011c8:	48 39 f0             	cmp    %rsi,%rax                // 
+  4011cb:	74 05                	je     4011d2 <phase_6+0xde>    // if(i == 5) goto (8)
+  4011cd:	48 89 d1             	mov    %rdx,%rcx                // rcx = rdx
+  4011d0:	eb eb                	jmp    4011bd <phase_6+0xc9>    // goto (7)
+  // 以上在0x6032d0处形成了一个“链表”， head=rbx, tail=rdx, 每行下一位是地址
+  -----------------------------
+  4011d2:	48 c7 42 08 00 00 00 	movq   $0x0,0x8(%rdx)           // (8)链表最后一位为空
   4011d9:	00 
-  4011da:	bd 05 00 00 00       	mov    $0x5,%ebp
-  4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax
-  4011e3:	8b 00                	mov    (%rax),%eax
-  4011e5:	39 03                	cmp    %eax,(%rbx)
-  4011e7:	7d 05                	jge    4011ee <phase_6+0xfa>
-  4011e9:	e8 4c 02 00 00       	callq  40143a <explode_bomb>
-  4011ee:	48 8b 5b 08          	mov    0x8(%rbx),%rbx
-  4011f2:	83 ed 01             	sub    $0x1,%ebp
-  4011f5:	75 e8                	jne    4011df <phase_6+0xeb>
+  4011da:	bd 05 00 00 00       	mov    $0x5,%ebp                // rbp = 5
+  4011df:	48 8b 43 08          	mov    0x8(%rbx),%rax           // rax = next_ptr
+  4011e3:	8b 00                	mov    (%rax),%eax              // rax = *(next_ptr)[0:4)
+  4011e5:	39 03                	cmp    %eax,(%rbx)              // *(ptr)[0:4] > *(next_ptr)[0:4]
+  4011e7:	7d 05                	jge    4011ee <phase_6+0xfa>    //
+  4011e9:	e8 4c 02 00 00       	callq  40143a <explode_bomb>    // BOOOMMMMM
+  4011ee:	48 8b 5b 08          	mov    0x8(%rbx),%rbx           // ptr = ptr->next
+  4011f2:	83 ed 01             	sub    $0x1,%ebp                // rbp -=1
+  4011f5:	75 e8                	jne    4011df <phase_6+0xeb>    // rbp != 0
+  // 以上要求链表的低4位按降序排列
+  -----------------------------
   4011f7:	48 83 c4 50          	add    $0x50,%rsp
   4011fb:	5b                   	pop    %rbx
   4011fc:	5d                   	pop    %rbp
