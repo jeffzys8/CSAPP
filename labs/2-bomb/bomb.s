@@ -637,24 +637,24 @@ Disassembly of section .text:
   401201:	41 5e                	pop    %r14
   401203:	c3                   	retq   
 
-0000000000401204 <fun7>:
-  401204:	48 83 ec 08          	sub    $0x8,%rsp
+0000000000401204 <fun7>:  // need to return 2
+  401204:	48 83 ec 08          	sub    $0x8,%rsp              // mem = 1*8, *rdi=24, rsi=input_num
   401208:	48 85 ff             	test   %rdi,%rdi
   40120b:	74 2b                	je     401238 <fun7+0x34>
-  40120d:	8b 17                	mov    (%rdi),%edx
-  40120f:	39 f2                	cmp    %esi,%edx
-  401211:	7e 0d                	jle    401220 <fun7+0x1c>
-  401213:	48 8b 7f 08          	mov    0x8(%rdi),%rdi
-  401217:	e8 e8 ff ff ff       	callq  401204 <fun7>
-  40121c:	01 c0                	add    %eax,%eax
-  40121e:	eb 1d                	jmp    40123d <fun7+0x39>
-  401220:	b8 00 00 00 00       	mov    $0x0,%eax
-  401225:	39 f2                	cmp    %esi,%edx
-  401227:	74 14                	je     40123d <fun7+0x39>
-  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi
-  40122d:	e8 d2 ff ff ff       	callq  401204 <fun7>
-  401232:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax
-  401236:	eb 05                	jmp    40123d <fun7+0x39>
+  40120d:	8b 17                	mov    (%rdi),%edx            // rdx = 24
+  40120f:	39 f2                	cmp    %esi,%edx              // 
+  401211:	7e 0d                	jle    401220 <fun7+0x1c>     // if (rdx <= rsi) goto (fun7_1)
+  401213:	48 8b 7f 08          	mov    0x8(%rdi),%rdi         // rdi = *(rdi+8)
+  401217:	e8 e8 ff ff ff       	callq  401204 <fun7>          // CALL fun7 !!!
+  40121c:	01 c0                	add    %eax,%eax              // rax = 2*rax
+  40121e:	eb 1d                	jmp    40123d <fun7+0x39>     // return
+  401220:	b8 00 00 00 00       	mov    $0x0,%eax              // (fun7_1) rax = 0
+  401225:	39 f2                	cmp    %esi,%edx              //
+  401227:	74 14                	je     40123d <fun7+0x39>     // if (rdx == rsi) return
+  401229:	48 8b 7f 10          	mov    0x10(%rdi),%rdi        // rdi = *(rdi+16)
+  40122d:	e8 d2 ff ff ff       	callq  401204 <fun7>          // CALL fun7 !!!
+  401232:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax  // rax = 2*rax+1
+  401236:	eb 05                	jmp    40123d <fun7+0x39>     // return
   401238:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
   40123d:	48 83 c4 08          	add    $0x8,%rsp
   401241:	c3                   	retq   
@@ -669,10 +669,10 @@ Disassembly of section .text:
   40125a:	48 89 c3             	mov    %rax,%rbx
   40125d:	8d 40 ff             	lea    -0x1(%rax),%eax
   401260:	3d e8 03 00 00       	cmp    $0x3e8,%eax
-  401265:	76 05                	jbe    40126c <secret_phase+0x2a>
+  401265:	76 05                	jbe    40126c <secret_phase+0x2a> // input <= 1001
   401267:	e8 ce 01 00 00       	callq  40143a <explode_bomb>
-  40126c:	89 de                	mov    %ebx,%esi
-  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi
+  40126c:	89 de                	mov    %ebx,%esi                  // rsi = input
+  40126e:	bf f0 30 60 00       	mov    $0x6030f0,%edi             // *rdi = 0x24 = 36
   401273:	e8 8c ff ff ff       	callq  401204 <fun7>
   401278:	83 f8 02             	cmp    $0x2,%eax
   40127b:	74 05                	je     401282 <secret_phase+0x40>
@@ -930,23 +930,24 @@ Disassembly of section .text:
   4015c3:	c3                   	retq   
 
 00000000004015c4 <phase_defused>:
-  4015c4:	48 83 ec 78          	sub    $0x78,%rsp
-  4015c8:	64 48 8b 04 25 28 00 	mov    %fs:0x28,%rax
+  4015c4:	48 83 ec 78          	sub    $0x78,%rsp                   // assign mem[15] 
+  4015c8:	64 48 8b 04 25 28 00 	mov    %fs:0x28,%rax                //
   4015cf:	00 00 
-  4015d1:	48 89 44 24 68       	mov    %rax,0x68(%rsp)
-  4015d6:	31 c0                	xor    %eax,%eax
+  4015d1:	48 89 44 24 68       	mov    %rax,0x68(%rsp)              // mem[13] = canary_value
+  4015d6:	31 c0                	xor    %eax,%eax                    // rax = 0
   4015d8:	83 3d 81 21 20 00 06 	cmpl   $0x6,0x202181(%rip)        # 603760 <num_input_strings>
   4015df:	75 5e                	jne    40163f <phase_defused+0x7b>
-  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8
-  4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
-  4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
-  4015f0:	be 19 26 40 00       	mov    $0x402619,%esi
-  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi
-  4015fa:	e8 f1 f5 ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
+  // enter secret_phase
+  4015e1:	4c 8d 44 24 10       	lea    0x10(%rsp),%r8               // arg[4] = &mem[2]
+  4015e6:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx               // arg[3] = &mem[1.5]
+  4015eb:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx               // arg[2] = &mem[1]
+  4015f0:	be 19 26 40 00       	mov    $0x402619,%esi               // *arg[1] = "%d %d %s"
+  4015f5:	bf 70 38 60 00       	mov    $0x603870,%edi               // arg[0] = phase_4_input
+  4015fa:	e8 f1 f5 ff ff       	callq  400bf0 <__isoc99_sscanf@plt> 
   4015ff:	83 f8 03             	cmp    $0x3,%eax
   401602:	75 31                	jne    401635 <phase_defused+0x71>
-  401604:	be 22 26 40 00       	mov    $0x402622,%esi
-  401609:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi
+  401604:	be 22 26 40 00       	mov    $0x402622,%esi               // *rsi = "DrEvil"
+  401609:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi              // rdi = input[2]
   40160e:	e8 25 fd ff ff       	callq  401338 <strings_not_equal>
   401613:	85 c0                	test   %eax,%eax
   401615:	75 1e                	jne    401635 <phase_defused+0x71>
